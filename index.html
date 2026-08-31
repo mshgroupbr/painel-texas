@@ -593,6 +593,7 @@
     <button class="btn-hoje" onclick="filtrarHoje()">Hoje</button>
     <button class="btn-hoje" style="border-color:rgba(139,33,49,0.4);color:var(--dourado);" onclick="abrirExportar()">⬇ Exportar</button>
     <button class="btn-hoje" onclick="filtrarSemana()">Esta semana</button>
+    <button class="btn-hoje" style="border-color:rgba(139,33,49,0.4);color:var(--dourado);" onclick="abrirSorteioCrm()">🎉 Sorteio</button>
 
     <button class="filtro-btn ativo" onclick="filtrarStatus('todas', this)">Todas</button>
     <button class="filtro-btn" onclick="filtrarStatus('pendente', this)">Pendentes</button>
@@ -635,6 +636,19 @@
     <div class="modal-btns">
       <button class="btn-sim" style="background:var(--dourado);color:var(--verde);" onclick="confirmarExportar()">Baixar CSV</button>
       <button class="btn-nao" onclick="fecharExportar()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal sorteio CRM -->
+<div class="modal-overlay" id="modal-sorteio-crm">
+  <div class="modal" style="max-width:640px;">
+    <h3>Cadastros do sorteio</h3>
+    <p id="sorteio-crm-header">Carregando...</p>
+    <div id="sorteio-crm-lista" style="max-height:360px;overflow-y:auto;text-align:left;margin-bottom:1.2rem;"></div>
+    <div class="modal-btns">
+      <button class="btn-sim" style="background:var(--dourado);color:var(--verde);" onclick="exportarSorteioCsv()">⬇ Baixar CSV</button>
+      <button class="btn-nao" onclick="fecharSorteioCrm()">Fechar</button>
     </div>
   </div>
 </div>
@@ -777,6 +791,11 @@ let reservaIdCancelando = null;
 let primeirasCarga = true;
 let idsConhecidos = new Set();
 let notifTimer = null;
+
+// ── Sorteio: estado ──
+const SORTEIO_REF = db.ref('sorteio_cadastros');
+let todosCadastrosSorteio = [];
+let sorteioListenerOn = false;
 
 // ══════════════════════
 //  LOGIN
@@ -1016,6 +1035,85 @@ function confirmarExportar() {
   URL.revokeObjectURL(url);
   fecharExportar();
   showToast('CSV exportado!');
+}
+
+// ══════════════════════
+//  SORTEIO — CRM de cadastros
+// ══════════════════════
+function abrirSorteioCrm() {
+  document.getElementById('modal-sorteio-crm').classList.add('open');
+  if (!sorteioListenerOn) {
+    sorteioListenerOn = true;
+    SORTEIO_REF.on('value', snap => {
+      todosCadastrosSorteio = [];
+      snap.forEach(child => {
+        todosCadastrosSorteio.push({ id: child.key, ...child.val() });
+      });
+      todosCadastrosSorteio.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0));
+      renderSorteioCrmLista();
+    });
+  } else {
+    renderSorteioCrmLista();
+  }
+}
+
+function fecharSorteioCrm() {
+  document.getElementById('modal-sorteio-crm').classList.remove('open');
+}
+
+function renderSorteioCrmLista() {
+  const el = document.getElementById('sorteio-crm-lista');
+  const header = document.getElementById('sorteio-crm-header');
+  header.textContent = `${todosCadastrosSorteio.length} cadastro${todosCadastrosSorteio.length !== 1 ? 's' : ''}`;
+
+  if (!todosCadastrosSorteio.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:2rem;">Nenhum cadastro ainda</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+      <thead>
+        <tr style="text-align:left;color:var(--cinza);letter-spacing:0.08em;text-transform:uppercase;font-size:0.55rem;">
+          <th style="padding:0.4rem;">Nome</th>
+          <th style="padding:0.4rem;">WhatsApp</th>
+          <th style="padding:0.4rem;">Instagram</th>
+          <th style="padding:0.4rem;">Quando</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${todosCadastrosSorteio.map(c => `
+        <tr style="border-top:1px solid rgba(139,33,49,0.15);">
+          <td style="padding:0.5rem 0.4rem;">${c.nome || ''}</td>
+          <td style="padding:0.5rem 0.4rem;">${c.whatsapp || ''}</td>
+          <td style="padding:0.5rem 0.4rem;">${c.instagram || '—'}</td>
+          <td style="padding:0.5rem 0.4rem;color:var(--cinza);">${formatarDataHora(c.criadoEm)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function exportarSorteioCsv() {
+  if (!todosCadastrosSorteio.length) { showToast('Nenhum cadastro para exportar'); return; }
+  const header = 'Nome,WhatsApp,Instagram,DataHora';
+  const rows = todosCadastrosSorteio.map(c =>
+    `"${c.nome || ''}","${c.whatsapp || ''}","${c.instagram || ''}","${formatarDataHora(c.criadoEm)}"`
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sorteio-texas-cadastros-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado!');
+}
+
+function formatarDataHora(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 let reservaIdDesfazendo = null;
