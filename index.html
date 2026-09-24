@@ -587,6 +587,16 @@
     </div>
   </div>
 
+  <!-- Liberação de reservas (fins de semana) -->
+  <div class="resumo-strip" id="liberacao-strip" style="display:none;">
+    <div class="resumo-date">LIBERAÇÃO DE RESERVAS — HOJE</div>
+    <div id="liberacao-status" style="font-size:0.75rem;color:var(--cinza);margin-bottom:0.6rem;letter-spacing:0.03em;"></div>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+      <button class="btn-hoje" id="btn-liberar" style="border-color:var(--verde-ok);color:var(--verde-ok);" onclick="liberarReservas()">🔓 Liberar reservas</button>
+      <button class="btn-hoje" id="btn-fechar-liberacao" style="border-color:var(--vermelho);color:var(--vermelho);display:none;" onclick="fecharLiberacao()">✕ Fechar agora</button>
+    </div>
+  </div>
+
   <!-- Controles -->
   <div class="controls">
     <input type="date" class="filtro-data" id="filtro-data" onchange="aplicarFiltros()">
@@ -839,6 +849,7 @@ function iniciarApp() {
   document.getElementById('filtro-data').value = hoje;
   atualizarResumoDate();
   carregarReservas();
+  iniciarLiberacao();
 }
 
 function atualizarResumoDate() {
@@ -1380,6 +1391,70 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════
+//  LIBERAÇÃO DE RESERVAS (fim de semana, janela 19:00–19:30)
+// ══════════════════════
+const DIAS_RESTRITOS_LIB = [0, 5, 6]; // dom, sex, sáb
+const HORA_FECHAMENTO_LIB = '19:30';
+let liberacaoHoje = null;
+
+function hojeISOLib() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function paraMinutosLib(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+}
+function minutosAgoraLib() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function iniciarLiberacao() {
+  if (!DIAS_RESTRITOS_LIB.includes(new Date().getDay())) return;
+  document.getElementById('liberacao-strip').style.display = 'block';
+  db.ref('liberacao_reservas/' + hojeISOLib()).on('value', snap => {
+    liberacaoHoje = snap.val();
+    renderLiberacaoStatus();
+  });
+  setInterval(renderLiberacaoStatus, 15000);
+}
+
+function renderLiberacaoStatus() {
+  const statusEl = document.getElementById('liberacao-status');
+  const btnLiberar = document.getElementById('btn-liberar');
+  const btnFechar = document.getElementById('btn-fechar-liberacao');
+  if (!statusEl) return;
+  const min = minutosAgoraLib();
+  const fechaMin = paraMinutosLib(HORA_FECHAMENTO_LIB);
+  const liberado = liberacaoHoje && liberacaoHoje.liberado && min < fechaMin;
+
+  if (liberado) {
+    statusEl.textContent = `✅ Aberto para o público — fecha automaticamente às ${HORA_FECHAMENTO_LIB}`;
+    btnLiberar.style.display = 'none';
+    btnFechar.style.display = 'inline-flex';
+  } else if (liberacaoHoje && liberacaoHoje.liberado && min >= fechaMin) {
+    statusEl.textContent = `🔒 Encerrado por hoje (fechou às ${HORA_FECHAMENTO_LIB})`;
+    btnLiberar.style.display = 'none';
+    btnFechar.style.display = 'none';
+  } else {
+    statusEl.textContent = `🔒 Fechado para o público — clique para liberar (fecha sozinho às ${HORA_FECHAMENTO_LIB})`;
+    btnLiberar.style.display = 'inline-flex';
+    btnFechar.style.display = 'none';
+  }
+}
+
+async function liberarReservas() {
+  await db.ref('liberacao_reservas/' + hojeISOLib()).set({ liberado: true, liberadoEm: Date.now() });
+  showToast('Reservas liberadas!');
+}
+
+async function fecharLiberacao() {
+  await db.ref('liberacao_reservas/' + hojeISOLib()).update({ liberado: false });
+  showToast('Reservas fechadas manualmente');
 }
 
 // Auto-foco no input de senha
