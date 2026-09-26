@@ -589,7 +589,7 @@
 
   <!-- Limite de reservas por data/horário -->
   <div class="resumo-strip" id="limite-strip">
-    <div class="resumo-date">LIMITE DE RESERVAS POR HORÁRIO</div>
+    <div class="resumo-date">LIMITE DE RESERVAS POR DIA (HORÁRIO = CORTE)</div>
     <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.8rem;align-items:center;">
       <input type="date" class="filtro-data" id="limite-data" style="width:150px;">
       <select class="filtro-data" id="limite-horario" style="width:100px;">
@@ -600,7 +600,7 @@
         <option>19:00</option><option>19:30</option><option>20:00</option><option>20:30</option>
         <option>21:00</option><option>21:30</option><option>22:00</option>
       </select>
-      <input type="number" min="1" class="filtro-data" id="limite-pessoas" placeholder="Máx. pessoas" style="width:130px;">
+      <input type="number" min="1" class="filtro-data" id="limite-pessoas" placeholder="Máx. pessoas/dia" style="width:130px;">
       <button class="btn-hoje" style="border-color:var(--verde-ok);color:var(--verde-ok);" onclick="definirLimite()">✓ Definir limite</button>
     </div>
     <div id="limites-lista" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
@@ -1404,7 +1404,7 @@ function showToast(msg) {
 }
 
 // ══════════════════════
-//  LIMITE DE RESERVAS POR DATA + HORÁRIO
+//  LIMITE DE RESERVAS POR DIA (horário = corte, pessoas = total do dia)
 // ══════════════════════
 let limitesReservas = {};
 
@@ -1424,14 +1424,10 @@ function renderLimites() {
   const el = document.getElementById('limites-lista');
   if (!el) return;
   const hoje = hojeISOLimite();
-  let entradas = [];
-  Object.keys(limitesReservas).forEach(data => {
-    if (data < hoje) return;
-    Object.keys(limitesReservas[data] || {}).forEach(horario => {
-      entradas.push({ data, horario, limite: limitesReservas[data][horario].limite });
-    });
-  });
-  entradas.sort((a, b) => a.data === b.data ? a.horario.localeCompare(b.horario) : a.data.localeCompare(b.data));
+  let entradas = Object.keys(limitesReservas)
+    .filter(data => data >= hoje)
+    .map(data => ({ data, ...limitesReservas[data] }))
+    .sort((a, b) => a.data.localeCompare(b.data));
 
   if (!entradas.length) {
     el.innerHTML = '<div style="font-size:0.65rem;color:var(--cinza);">Nenhum limite configurado.</div>';
@@ -1439,32 +1435,32 @@ function renderLimites() {
   }
 
   el.innerHTML = entradas.map(e => {
-    const reservado = todasReservas.filter(r => r.data === e.data && r.horario === e.horario && r.status !== 'cancelado')
+    const reservado = todasReservas.filter(r => r.data === e.data && r.status !== 'cancelado')
       .reduce((acc, r) => acc + (parseInt(r.pessoas) || 0), 0);
-    const cor = reservado >= e.limite ? 'var(--vermelho)' : 'var(--verde-ok)';
+    const cor = reservado >= e.limitePessoas ? 'var(--vermelho)' : 'var(--verde-ok)';
     return `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;font-size:0.68rem;border:1px solid rgba(139,33,49,0.18);padding:0.5rem 0.8rem;">
-      <span>📅 ${formatarData(e.data)} · 🕐 ${e.horario} · <span style="color:${cor}">${reservado}/${e.limite} pessoas</span></span>
-      <button class="btn-acao btn-excluir" onclick="removerLimite('${e.data}','${e.horario}')">🗑 Remover</button>
+      <span>📅 ${formatarData(e.data)} · até 🕐 ${e.horarioLimite} · <span style="color:${cor}">${reservado}/${e.limitePessoas} pessoas</span></span>
+      <button class="btn-acao btn-excluir" onclick="removerLimite('${e.data}')">🗑 Remover</button>
     </div>`;
   }).join('');
 }
 
 async function definirLimite() {
   const data = document.getElementById('limite-data').value;
-  const horario = document.getElementById('limite-horario').value;
+  const horarioLimite = document.getElementById('limite-horario').value;
   const pessoas = parseInt(document.getElementById('limite-pessoas').value);
-  if (!data || !horario || !pessoas || pessoas < 1) {
-    showToast('Preencha data, horário e quantidade de pessoas');
+  if (!data || !horarioLimite || !pessoas || pessoas < 1) {
+    showToast('Preencha data, horário limite e quantidade de pessoas');
     return;
   }
-  await db.ref('limites_reservas/' + data + '/' + horario).set({ limite: pessoas, criadoEm: Date.now() });
+  await db.ref('limites_reservas/' + data).set({ horarioLimite, limitePessoas: pessoas, criadoEm: Date.now() });
   showToast('Limite definido!');
   document.getElementById('limite-pessoas').value = '';
 }
 
-async function removerLimite(data, horario) {
-  await db.ref('limites_reservas/' + data + '/' + horario).remove();
-  showToast('Limite removido — horário liberado sem limite');
+async function removerLimite(data) {
+  await db.ref('limites_reservas/' + data).remove();
+  showToast('Limite removido — dia liberado sem limite');
 }
 
 // Auto-foco no input de senha
