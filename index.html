@@ -587,14 +587,23 @@
     </div>
   </div>
 
-  <!-- Liberação de reservas (fins de semana) -->
-  <div class="resumo-strip" id="liberacao-strip" style="display:none;">
-    <div class="resumo-date">LIBERAÇÃO DE RESERVAS — HOJE</div>
-    <div id="liberacao-status" style="font-size:0.75rem;color:var(--cinza);margin-bottom:0.6rem;letter-spacing:0.03em;"></div>
-    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
-      <button class="btn-hoje" id="btn-liberar" style="border-color:var(--verde-ok);color:var(--verde-ok);" onclick="liberarReservas()">🔓 Liberar reservas</button>
-      <button class="btn-hoje" id="btn-fechar-liberacao" style="border-color:var(--vermelho);color:var(--vermelho);display:none;" onclick="fecharLiberacao()">✕ Fechar agora</button>
+  <!-- Limite de reservas por data/horário -->
+  <div class="resumo-strip" id="limite-strip">
+    <div class="resumo-date">LIMITE DE RESERVAS POR HORÁRIO</div>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.8rem;align-items:center;">
+      <input type="date" class="filtro-data" id="limite-data" style="width:150px;">
+      <select class="filtro-data" id="limite-horario" style="width:100px;">
+        <option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option>
+        <option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option>
+        <option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option>
+        <option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option>
+        <option>19:00</option><option>19:30</option><option>20:00</option><option>20:30</option>
+        <option>21:00</option><option>21:30</option><option>22:00</option>
+      </select>
+      <input type="number" min="1" class="filtro-data" id="limite-pessoas" placeholder="Máx. pessoas" style="width:130px;">
+      <button class="btn-hoje" style="border-color:var(--verde-ok);color:var(--verde-ok);" onclick="definirLimite()">✓ Definir limite</button>
     </div>
+    <div id="limites-lista" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
   </div>
 
   <!-- Controles -->
@@ -849,7 +858,7 @@ function iniciarApp() {
   document.getElementById('filtro-data').value = hoje;
   atualizarResumoDate();
   carregarReservas();
-  iniciarLiberacao();
+  iniciarLimites();
 }
 
 function atualizarResumoDate() {
@@ -888,6 +897,7 @@ function carregarReservas() {
 
     atualizarResumo();
     renderLista();
+    renderLimites();
   });
 }
 
@@ -1394,67 +1404,67 @@ function showToast(msg) {
 }
 
 // ══════════════════════
-//  LIBERAÇÃO DE RESERVAS (fim de semana, janela 19:00–19:30)
+//  LIMITE DE RESERVAS POR DATA + HORÁRIO
 // ══════════════════════
-const DIAS_RESTRITOS_LIB = [0, 5, 6]; // dom, sex, sáb
-const HORA_FECHAMENTO_LIB = '19:30';
-let liberacaoHoje = null;
+let limitesReservas = {};
 
-function hojeISOLib() {
+function hojeISOLimite() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
-function paraMinutosLib(hhmm) {
-  const [h, m] = hhmm.split(':').map(Number);
-  return h * 60 + m;
-}
-function minutosAgoraLib() {
-  const d = new Date();
-  return d.getHours() * 60 + d.getMinutes();
-}
 
-function iniciarLiberacao() {
-  if (!DIAS_RESTRITOS_LIB.includes(new Date().getDay())) return;
-  document.getElementById('liberacao-strip').style.display = 'block';
-  db.ref('liberacao_reservas/' + hojeISOLib()).on('value', snap => {
-    liberacaoHoje = snap.val();
-    renderLiberacaoStatus();
+function iniciarLimites() {
+  db.ref('limites_reservas').on('value', snap => {
+    limitesReservas = snap.val() || {};
+    renderLimites();
   });
-  setInterval(renderLiberacaoStatus, 15000);
 }
 
-function renderLiberacaoStatus() {
-  const statusEl = document.getElementById('liberacao-status');
-  const btnLiberar = document.getElementById('btn-liberar');
-  const btnFechar = document.getElementById('btn-fechar-liberacao');
-  if (!statusEl) return;
-  const min = minutosAgoraLib();
-  const fechaMin = paraMinutosLib(HORA_FECHAMENTO_LIB);
-  const liberado = liberacaoHoje && liberacaoHoje.liberado && min < fechaMin;
+function renderLimites() {
+  const el = document.getElementById('limites-lista');
+  if (!el) return;
+  const hoje = hojeISOLimite();
+  let entradas = [];
+  Object.keys(limitesReservas).forEach(data => {
+    if (data < hoje) return;
+    Object.keys(limitesReservas[data] || {}).forEach(horario => {
+      entradas.push({ data, horario, limite: limitesReservas[data][horario].limite });
+    });
+  });
+  entradas.sort((a, b) => a.data === b.data ? a.horario.localeCompare(b.horario) : a.data.localeCompare(b.data));
 
-  if (liberado) {
-    statusEl.textContent = `✅ Aberto para o público — fecha automaticamente às ${HORA_FECHAMENTO_LIB}`;
-    btnLiberar.style.display = 'none';
-    btnFechar.style.display = 'inline-flex';
-  } else if (liberacaoHoje && liberacaoHoje.liberado && min >= fechaMin) {
-    statusEl.textContent = `🔒 Encerrado por hoje (fechou às ${HORA_FECHAMENTO_LIB})`;
-    btnLiberar.style.display = 'none';
-    btnFechar.style.display = 'none';
-  } else {
-    statusEl.textContent = `🔒 Fechado para o público — clique para liberar (fecha sozinho às ${HORA_FECHAMENTO_LIB})`;
-    btnLiberar.style.display = 'inline-flex';
-    btnFechar.style.display = 'none';
+  if (!entradas.length) {
+    el.innerHTML = '<div style="font-size:0.65rem;color:var(--cinza);">Nenhum limite configurado.</div>';
+    return;
   }
+
+  el.innerHTML = entradas.map(e => {
+    const reservado = todasReservas.filter(r => r.data === e.data && r.horario === e.horario && r.status !== 'cancelado')
+      .reduce((acc, r) => acc + (parseInt(r.pessoas) || 0), 0);
+    const cor = reservado >= e.limite ? 'var(--vermelho)' : 'var(--verde-ok)';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;font-size:0.68rem;border:1px solid rgba(139,33,49,0.18);padding:0.5rem 0.8rem;">
+      <span>📅 ${formatarData(e.data)} · 🕐 ${e.horario} · <span style="color:${cor}">${reservado}/${e.limite} pessoas</span></span>
+      <button class="btn-acao btn-excluir" onclick="removerLimite('${e.data}','${e.horario}')">🗑 Remover</button>
+    </div>`;
+  }).join('');
 }
 
-async function liberarReservas() {
-  await db.ref('liberacao_reservas/' + hojeISOLib()).set({ liberado: true, liberadoEm: Date.now() });
-  showToast('Reservas liberadas!');
+async function definirLimite() {
+  const data = document.getElementById('limite-data').value;
+  const horario = document.getElementById('limite-horario').value;
+  const pessoas = parseInt(document.getElementById('limite-pessoas').value);
+  if (!data || !horario || !pessoas || pessoas < 1) {
+    showToast('Preencha data, horário e quantidade de pessoas');
+    return;
+  }
+  await db.ref('limites_reservas/' + data + '/' + horario).set({ limite: pessoas, criadoEm: Date.now() });
+  showToast('Limite definido!');
+  document.getElementById('limite-pessoas').value = '';
 }
 
-async function fecharLiberacao() {
-  await db.ref('liberacao_reservas/' + hojeISOLib()).update({ liberado: false });
-  showToast('Reservas fechadas manualmente');
+async function removerLimite(data, horario) {
+  await db.ref('limites_reservas/' + data + '/' + horario).remove();
+  showToast('Limite removido — horário liberado sem limite');
 }
 
 // Auto-foco no input de senha
