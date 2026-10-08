@@ -20,6 +20,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 
 <style>
   :root {
@@ -521,6 +522,61 @@
   }
 
   input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6) sepia(1) hue-rotate(10deg); }
+
+  /* ══ HOSTESS ══ */
+  .btn-hostess{font-family:'Inter',sans-serif;font-size:.6rem;letter-spacing:.1em;padding:.4rem .8rem;border:1px solid var(--dourado);background:var(--dourado);color:var(--areia);cursor:pointer}
+  #hostess-screen{display:none;position:fixed;inset:0;z-index:150;background:var(--verde-escuro);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #hostess-screen.open{display:block}
+  .h-top{position:sticky;top:0;z-index:5;background:var(--verde);border-bottom:1px solid rgba(139,33,49,.25);padding:.8rem 1rem;display:flex;align-items:center;gap:.6rem;justify-content:space-between}
+  .h-title{font-family:'Bevan',serif;color:var(--dourado);font-size:1.05rem;text-align:center;flex:1}
+  .h-title small{display:block;font-family:'Inter',sans-serif;font-size:.5rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cinza);margin-top:2px}
+  .h-btn{font-family:'Inter',sans-serif;font-size:.72rem;padding:.6rem .9rem;border:1px solid rgba(244,234,217,.2);background:transparent;color:var(--areia);cursor:pointer;border-radius:4px}
+  .h-btn:active{opacity:.7}
+  .h-primary{background:var(--dourado);border-color:var(--dourado);color:#fff;font-weight:600}
+  .h-warn{border-color:var(--vermelho);color:var(--vermelho)}
+  .h-danger{background:var(--vermelho);border-color:var(--vermelho);color:#fff;font-weight:600}
+  .h-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;padding:.8rem 1rem 0}
+  .h-stat{background:var(--verde);border:1px solid rgba(139,33,49,.2);padding:.6rem .4rem;text-align:center;border-radius:6px}
+  .h-stat .n{font-family:'Bevan',serif;font-size:1.5rem;color:var(--areia);line-height:1}
+  .h-stat .l{font-size:.5rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cinza);margin-top:.3rem}
+  .h-stat.al .n{color:var(--vermelho)}
+  .h-actions{display:flex;gap:.5rem;flex-wrap:wrap;padding:.8rem 1rem 0;align-items:center}
+  .h-actions input,.h-box input,.h-box select{font-family:'Inter',sans-serif;font-size:16px;background:rgba(244,234,217,.07);border:1px solid rgba(139,33,49,.35);color:var(--areia);padding:.6rem .7rem;outline:none;border-radius:4px;width:100%}
+  .h-actions #h-num{width:72px;text-align:center}
+  .h-actions #h-busca{flex:1;min-width:150px;width:auto}
+  .h-legenda{display:flex;gap:1rem;flex-wrap:wrap;padding:.7rem 1rem 0;font-size:.6rem;color:var(--cinza)}
+  .h-legenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+  .h-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px;padding:.8rem 1rem 6rem}
+  .h-tile{position:relative;height:54px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:1px solid rgba(244,234,217,.1);color:var(--cinza);font-size:.8rem}
+  .h-tile b{font-weight:700;font-size:.85rem}
+  .h-tile small{font-size:.5rem;max-width:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:.9}
+  .h-tile.livre{background:rgba(244,234,217,.03)}
+  .h-tile.uso{color:#fff;background:var(--dourado-claro);border-color:transparent}
+  .h-tile.alerta{box-shadow:0 0 0 2px var(--vermelho);animation:hpulse 1.6s infinite}
+  .h-tile .h-clock{position:absolute;top:1px;right:3px;font-size:.55rem}
+  .h-tile.h-dim{opacity:.2}
+  .h-tile.h-hit{box-shadow:0 0 0 2px #F4EAD9}
+  @keyframes hpulse{50%{box-shadow:0 0 0 4px rgba(226,87,76,.35)}}
+  .h-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:20;align-items:flex-start;justify-content:center;overflow-y:auto;padding:1rem}
+  .h-ov.open{display:flex}
+  .h-box{background:var(--verde);border:1px solid rgba(139,33,49,.4);padding:1.3rem;width:100%;max-width:420px;margin:auto;border-radius:8px}
+  .h-box h3{font-family:'Bevan',serif;font-weight:400;color:var(--areia);font-size:1.15rem;margin-bottom:.6rem}
+  .h-box label{display:block;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza);margin:.7rem 0 .25rem}
+  .h-box label.h-chk{display:flex;gap:.5rem;align-items:flex-start;text-transform:none;letter-spacing:0;font-size:.7rem;color:var(--areia);margin-top:.9rem}
+  .h-box label.h-chk input{width:auto;margin-top:2px}
+  .h-info{font-size:.7rem;color:var(--areia);background:rgba(244,234,217,.06);padding:.5rem .7rem;border-radius:4px;display:none}
+  .h-info.on{display:block}
+  .h-erro{color:var(--vermelho);font-size:.7rem;min-height:1rem;margin-top:.5rem}
+  .h-btns{display:flex;flex-direction:column;gap:.5rem;margin-top:.8rem}
+  .h-video-wrap{position:relative;background:#000;border-radius:6px;overflow:hidden;aspect-ratio:4/3}
+  .h-video-wrap video{width:100%;height:100%;object-fit:cover}
+  .h-video-wrap:after{content:'';position:absolute;inset:18%;border:2px solid rgba(244,234,217,.7);border-radius:8px;pointer-events:none}
+  .h-row{display:flex;justify-content:space-between;gap:1rem;padding:.4rem 0;border-bottom:1px solid rgba(244,234,217,.08);font-size:.8rem}
+  .h-row span:first-child{color:var(--cinza)}
+  #h-snack{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--areia);color:var(--verde-escuro);padding:.7rem 1rem;border-radius:30px;font-size:.78rem;z-index:300;display:none;align-items:center;gap:.8rem;max-width:92vw;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  #h-snack.on{display:flex}
+  #h-snack button{background:var(--dourado);color:#fff;border:none;padding:.35rem .8rem;border-radius:20px;font-size:.72rem;font-weight:600;cursor:pointer}
+  @media (min-width:900px){.h-map{grid-template-columns:repeat(auto-fill,minmax(66px,1fr))}.h-top,.h-stats,.h-actions,.h-legenda,.h-map{max-width:1100px;margin-left:auto;margin-right:auto}}
 </style>
 </head>
 <body>
@@ -560,6 +616,7 @@
     <div class="header-right">
       <span class="header-badge">Gerência</span>
       <button class="notif-btn" title="Notificações" id="notif-btn">🔔<span class="notif-badge" id="notif-badge"></span></button>
+      <button class="btn-hostess" onclick="abrirHostess()">🎟️ Hostess</button>
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
   </header>
@@ -773,6 +830,85 @@
   <div class="nova-notif-info" id="notif-info"></div>
 </div>
 
+
+<!-- ══ HOSTESS ══ -->
+<div id="hostess-screen">
+  <div class="h-top">
+    <button class="h-btn" onclick="fecharHostess()">← Voltar</button>
+    <div class="h-title">Hostess<small>Controle de comandas</small></div>
+    <button class="h-btn h-warn" onclick="hAbrirEncerrar()">Encerrar noite</button>
+  </div>
+  <div class="h-stats">
+    <div class="h-stat"><div class="n" id="h-n-dentro">0</div><div class="l">Dentro agora</div></div>
+    <div class="h-stat"><div class="n" id="h-n-entradas">0</div><div class="l">Entradas</div></div>
+    <div class="h-stat"><div class="n" id="h-n-saidas">0</div><div class="l">Saídas</div></div>
+    <div class="h-stat al" id="h-box-alertas" style="display:none"><div class="n" id="h-n-alertas">0</div><div class="l">⏰ +6h dentro</div></div>
+  </div>
+  <div class="h-actions">
+    <button class="h-btn h-primary" onclick="hAbrirScanner()">📷 Escanear comanda</button>
+    <input id="h-num" type="tel" inputmode="numeric" maxlength="3" placeholder="Nº" onkeydown="if(event.key==='Enter') hOkNum()">
+    <button class="h-btn" onclick="hOkNum()">OK</button>
+    <input id="h-busca" type="search" placeholder="Buscar nome ou telefone" oninput="hRender()">
+  </div>
+  <div class="h-legenda">
+    <span><i style="background:rgba(244,234,217,.08);border:1px solid rgba(244,234,217,.2)"></i>Livre</span>
+    <span><i style="background:var(--dourado-claro)"></i>Em uso</span>
+    <span><i style="background:#2E7D6B"></i>Cores iguais = mesmo grupo</span>
+    <span><i style="box-shadow:0 0 0 2px var(--vermelho)"></i>+6h dentro</span>
+  </div>
+  <div class="h-map" id="h-map"></div>
+
+  <!-- Scanner -->
+  <div class="h-ov" id="h-modal-scan"><div class="h-box">
+    <h3>Escanear comanda</h3>
+    <div class="h-info" id="h-scan-grupo"></div>
+    <div class="h-video-wrap"><video id="h-video" playsinline muted></video></div>
+    <div class="h-erro" id="h-scan-msg" style="color:var(--areia)"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem"><input id="h-scan-num" type="tel" inputmode="numeric" maxlength="3" placeholder="Digitar nº" onkeydown="if(event.key==='Enter') hOkScanNum()"><button class="h-btn" onclick="hOkScanNum()">OK</button></div>
+    <div class="h-btns"><button class="h-btn" id="h-scan-fechar" onclick="hFecharScanner()">Fechar</button></div>
+  </div></div>
+
+  <!-- Cadastro -->
+  <div class="h-ov" id="h-modal-cadastro"><div class="h-box">
+    <h3 id="h-c-titulo">Comanda</h3>
+    <div class="h-info" id="h-c-info"></div>
+    <label>Telefone (WhatsApp)</label>
+    <input id="h-c-tel" type="tel" inputmode="numeric" placeholder="(47) 99999-9999" oninput="hTelInput()">
+    <label>Nome</label>
+    <input id="h-c-nome" type="text" autocomplete="off" placeholder="Nome do cliente">
+    <label>Sexo</label>
+    <select id="h-c-sexo"><option value="">Selecione</option><option value="F">Feminino</option><option value="M">Masculino</option><option value="O">Outro</option><option value="N">Prefiro não informar</option></select>
+    <label>Data de nascimento</label>
+    <input id="h-c-nasc" type="date" oninput="hIdadeAviso()">
+    <label class="h-chk"><input type="checkbox" id="h-c-consent"> Autorizo o Texas Country Bar a guardar meus dados e entrar em contato comigo (WhatsApp) com novidades e promoções.</label>
+    <div class="h-erro" id="h-c-erro"></div>
+    <div class="h-btns">
+      <button class="h-btn h-primary" onclick="hSalvarCadastro(false)">Registrar entrada</button>
+      <button class="h-btn" onclick="hSalvarCadastro(true)">Entrada + agrupar mais comandas</button>
+      <button class="h-btn" onclick="hFecharCadastro()">Cancelar</button>
+    </div>
+  </div></div>
+
+  <!-- Detalhe / saída -->
+  <div class="h-ov" id="h-modal-detalhe"><div class="h-box">
+    <h3 id="h-d-titulo">Comanda</h3>
+    <div id="h-d-corpo"></div>
+    <div class="h-btns" id="h-d-btns"></div>
+  </div></div>
+
+  <!-- Encerrar noite -->
+  <div class="h-ov" id="h-modal-encerrar"><div class="h-box">
+    <h3>Encerrar noite</h3>
+    <p style="font-size:.8rem;line-height:1.5;color:var(--areia)" id="h-e-txt"></p>
+    <div class="h-btns">
+      <button class="h-btn h-danger" onclick="hConfirmarEncerrar()">Zerar todas as comandas</button>
+      <button class="h-btn" onclick="document.getElementById('h-modal-encerrar').classList.remove('open')">Cancelar</button>
+    </div>
+  </div></div>
+
+  <div id="h-snack"><span id="h-snack-txt"></span><button id="h-snack-btn" onclick="hDesfazer()">Desfazer</button></div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -843,6 +979,7 @@ function verificarSenha() {
 }
 
 function sair() {
+  if (typeof fecharHostess === 'function') fecharHostess();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-input').value = '';
@@ -1465,6 +1602,394 @@ async function removerLimite(data) {
 
 // Auto-foco no input de senha
 window.onload = () => document.getElementById('login-input').focus();
+
+// ══════════════════════
+//  HOSTESS — controle de comandas (001–300)
+// ══════════════════════
+const H_MAX = 300;
+const H_ALERTA_MS = 6 * 3600 * 1000;
+const H_CORTE_HORA = 6;
+const H_CORES = ['#2E7D6B','#B07A2A','#4B6FA5','#8E4B8E','#A5513F','#3E8E41','#7A6A2E','#2F7F8F'];
+let hAtivas = {};
+let hVisitas = {};
+let hOn = false, hTimer = null, hRefVis = null, hDiaAtual = '';
+let hAgrupando = null;
+let hComandaPend = null;
+let hClienteConhecido = null;
+let hTelReq = 0;
+let hScan = { stream: null, loop: false, det: null, canvas: null, last: '', lastTs: 0 };
+let hUndo = null, hUndoTimer = null;
+
+function hPad(n) { return String(n).padStart(3, '0'); }
+function hEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function hCorteDate() { const d = new Date(); if (d.getHours() < H_CORTE_HORA) d.setDate(d.getDate() - 1); d.setHours(H_CORTE_HORA, 0, 0, 0); return d; }
+function hDiaKey() { const d = hCorteDate(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function hFmtHora(ts) { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function hFmtDur(ms) { const m = Math.max(0, Math.floor(ms / 60000)); return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0'); }
+function hTel(v) { let d = String(v || '').replace(/\D/g, ''); if (d.length > 11 && d.indexOf('55') === 0) d = d.slice(2); return d.slice(0, 11); }
+function hFmtTel(v) { const d = hTel(v); if (d.length === 11) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7); if (d.length === 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6); return d; }
+function hHash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+function hPrimeiroNome(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
+
+function abrirHostess() {
+  document.getElementById('hostess-screen').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (!hOn) { hOn = true; hIniciarListeners(); }
+  hRender();
+  clearInterval(hTimer);
+  hTimer = setInterval(hRender, 60000);
+}
+function fecharHostess() {
+  hFecharScanner();
+  const sc = document.getElementById('hostess-screen');
+  if (!sc) return;
+  sc.classList.remove('open');
+  document.body.style.overflow = '';
+  clearInterval(hTimer);
+  ['h-modal-cadastro', 'h-modal-detalhe', 'h-modal-encerrar'].forEach(function (id) { document.getElementById(id).classList.remove('open'); });
+}
+function hIniciarListeners() {
+  db.ref('hostess/comandas').on('value', function (s) { hAtivas = s.val() || {}; hRender(); });
+  hAssinarVisitas();
+}
+function hAssinarVisitas() {
+  if (hRefVis) hRefVis.off();
+  hDiaAtual = hDiaKey();
+  hRefVis = db.ref('hostess/visitas/' + hDiaAtual);
+  hRefVis.on('value', function (s) { hVisitas = s.val() || {}; hRender(); });
+}
+
+function hRender() {
+  const sc = document.getElementById('hostess-screen');
+  if (!sc || !sc.classList.contains('open')) return;
+  if (hDiaKey() !== hDiaAtual) hAssinarVisitas();
+  const agora = Date.now();
+  const ativas = Object.keys(hAtivas);
+  const vis = Object.keys(hVisitas).map(function (k) { return hVisitas[k]; });
+  document.getElementById('h-n-dentro').textContent = ativas.length;
+  document.getElementById('h-n-entradas').textContent = vis.length;
+  document.getElementById('h-n-saidas').textContent = vis.filter(function (v) { return v.saidaTs; }).length;
+  const alertas = ativas.filter(function (k) { return agora - hAtivas[k].entradaTs > H_ALERTA_MS; }).length;
+  document.getElementById('h-n-alertas').textContent = alertas;
+  document.getElementById('h-box-alertas').style.display = alertas ? '' : 'none';
+
+  const q = (document.getElementById('h-busca').value || '').trim().toLowerCase();
+  const qd = q.replace(/\D/g, '');
+  const contGrupo = {};
+  ativas.forEach(function (k) { const g = hAtivas[k].grupoId; if (g) contGrupo[g] = (contGrupo[g] || 0) + 1; });
+  let html = '';
+  for (let i = 1; i <= H_MAX; i++) {
+    const k = hPad(i);
+    const c = hAtivas[k];
+    if (!c) { html += '<div class="h-tile livre' + (q ? ' h-dim' : '') + '" onclick="hAbrirLivre(' + i + ')"><b>' + k + '</b></div>'; continue; }
+    const agrupado = c.grupoId && contGrupo[c.grupoId] > 1;
+    const cor = agrupado ? H_CORES[hHash(c.grupoId) % H_CORES.length] : '';
+    const alerta = (agora - c.entradaTs) > H_ALERTA_MS;
+    const hit = q && ((String(c.nome || '').toLowerCase().indexOf(q) >= 0) || (qd && String(c.tel || '').indexOf(qd) >= 0));
+    let cls = 'h-tile uso' + (alerta ? ' alerta' : '') + (q ? (hit ? ' h-hit' : ' h-dim') : '');
+    html += '<div class="' + cls + '"' + (cor ? ' style="background:' + cor + '"' : '') + ' onclick="hAbrirDetalhe(\'' + k + '\')">' +
+      (alerta ? '<span class="h-clock">⏰</span>' : '') + '<b>' + k + '</b><small>' + hEsc(hPrimeiroNome(c.nome)) + '</small></div>';
+  }
+  document.getElementById('h-map').innerHTML = html;
+}
+
+function hSnack(txt, comDesfazer) {
+  document.getElementById('h-snack-txt').textContent = txt;
+  document.getElementById('h-snack-btn').style.display = comDesfazer ? '' : 'none';
+  document.getElementById('h-snack').classList.add('on');
+  clearTimeout(hUndoTimer);
+  hUndoTimer = setTimeout(function () { document.getElementById('h-snack').classList.remove('on'); hUndo = null; }, comDesfazer ? 8000 : 3000);
+}
+
+// ── Número digitado / lido ──
+function hOkNum() {
+  const el = document.getElementById('h-num');
+  const n = parseInt(el.value, 10);
+  el.value = '';
+  hEntradaComanda(n, false);
+}
+function hOkScanNum() {
+  const el = document.getElementById('h-scan-num');
+  const n = parseInt(el.value, 10);
+  el.value = '';
+  hEntradaComanda(n, true);
+}
+function hAbrirLivre(n) { hEntradaComanda(n, false); }
+
+function hEntradaComanda(n, doScanner) {
+  const msg = document.getElementById('h-scan-msg');
+  if (!n || n < 1 || n > H_MAX) {
+    const t = 'Comanda inválida — use 001 a 300';
+    if (doScanner) msg.textContent = t; else hSnack(t, false);
+    return;
+  }
+  const k = hPad(n);
+  const c = hAtivas[k];
+  if (c) {
+    if (hAgrupando) { msg.textContent = 'Comanda ' + k + ' já está em uso (' + hPrimeiroNome(c.nome) + ')'; if (navigator.vibrate) navigator.vibrate(200); return; }
+    hFecharScanner();
+    hAbrirDetalhe(k);
+    return;
+  }
+  if (hAgrupando) { hAdicionarAoGrupo(k); return; }
+  hFecharScanner();
+  hAbrirCadastro(k);
+}
+
+// ── Scanner ──
+async function hAbrirScanner() {
+  document.getElementById('h-modal-scan').classList.add('open');
+  hAtualizarBannerGrupo();
+  const msg = document.getElementById('h-scan-msg');
+  msg.textContent = 'Aponte a câmera para o QR da comanda';
+  try {
+    hScan.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const v = document.getElementById('h-video');
+    v.srcObject = hScan.stream;
+    await v.play();
+    hScan.det = null;
+    if ('BarcodeDetector' in window) { try { hScan.det = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { hScan.det = null; } }
+    hScan.loop = true;
+    hLoopScan();
+  } catch (e) {
+    msg.textContent = 'Câmera indisponível — digite o número da comanda abaixo.';
+  }
+}
+function hLoopScan() {
+  if (!hScan.loop) return;
+  const v = document.getElementById('h-video');
+  if (v && v.readyState >= 2 && v.videoWidth) {
+    const w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+    const c = hScan.canvas || (hScan.canvas = document.createElement('canvas'));
+    c.width = w; c.height = h;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(v, 0, 0, w, h);
+    if (hScan.det) {
+      hScan.det.detect(c).then(function (r) { if (r && r.length) hLeuQR(r[0].rawValue); }).catch(function () {});
+    } else if (window.jsQR) {
+      const im = x.getImageData(0, 0, w, h);
+      const r = jsQR(im.data, w, h, { inversionAttempts: 'dontInvert' });
+      if (r && r.data) hLeuQR(r.data);
+    }
+  }
+  setTimeout(hLoopScan, 200);
+}
+function hLeuQR(texto) {
+  const agora = Date.now();
+  if (texto === hScan.last && agora - hScan.lastTs < 2500) return;
+  hScan.last = texto; hScan.lastTs = agora;
+  const m = String(texto).trim().match(/^0*(\d{1,3})$/);
+  if (!m) { document.getElementById('h-scan-msg').textContent = 'QR não reconhecido: ' + String(texto).slice(0, 30); return; }
+  hEntradaComanda(parseInt(m[1], 10), true);
+}
+function hPararScanner() {
+  hScan.loop = false;
+  if (hScan.stream) { hScan.stream.getTracks().forEach(function (t) { t.stop(); }); hScan.stream = null; }
+  const v = document.getElementById('h-video'); if (v) v.srcObject = null;
+}
+function hFecharScanner() {
+  hPararScanner();
+  const m = document.getElementById('h-modal-scan'); if (m) m.classList.remove('open');
+  hAgrupando = null;
+}
+function hAtualizarBannerGrupo() {
+  const b = document.getElementById('h-scan-grupo');
+  if (hAgrupando) {
+    const n = Object.keys(hAtivas).filter(function (k) { return hAtivas[k].grupoId === hAgrupando.grupoId; }).length;
+    b.innerHTML = 'Agrupando em <b>' + hEsc(hAgrupando.nome) + '</b> · ' + hFmtTel(hAgrupando.tel) + '<br>Comandas no grupo: <b>' + n + '</b> — leia as próximas comandas.';
+    b.classList.add('on');
+    document.getElementById('h-scan-fechar').textContent = 'Concluir agrupamento';
+  } else {
+    b.classList.remove('on');
+    document.getElementById('h-scan-fechar').textContent = 'Fechar';
+  }
+}
+
+// ── Cadastro ──
+function hAbrirCadastro(k) {
+  hComandaPend = k;
+  hClienteConhecido = null;
+  document.getElementById('h-c-titulo').textContent = 'Entrada · comanda ' + k;
+  ['h-c-tel', 'h-c-nome', 'h-c-nasc'].forEach(function (id) { document.getElementById(id).value = ''; });
+  document.getElementById('h-c-sexo').value = '';
+  document.getElementById('h-c-consent').checked = false;
+  document.getElementById('h-c-erro').textContent = '';
+  const inf = document.getElementById('h-c-info'); inf.className = 'h-info'; inf.textContent = '';
+  document.getElementById('h-modal-cadastro').classList.add('open');
+  setTimeout(function () { document.getElementById('h-c-tel').focus(); }, 100);
+}
+function hFecharCadastro() {
+  document.getElementById('h-modal-cadastro').classList.remove('open');
+  hComandaPend = null;
+}
+function hTelInput() {
+  const el = document.getElementById('h-c-tel');
+  const d = hTel(el.value);
+  el.value = hFmtTel(d);
+  const inf = document.getElementById('h-c-info');
+  if (d.length < 10) { hClienteConhecido = null; inf.className = 'h-info'; return; }
+  const req = ++hTelReq;
+  db.ref('hostess/clientes/' + d).once('value').then(function (s) {
+    if (req !== hTelReq) return;
+    const c = s.val();
+    if (!c) { hClienteConhecido = null; inf.className = 'h-info'; return; }
+    hClienteConhecido = c;
+    if (!document.getElementById('h-c-nome').value) document.getElementById('h-c-nome').value = c.nome || '';
+    if (!document.getElementById('h-c-sexo').value) document.getElementById('h-c-sexo').value = c.sexo || '';
+    if (!document.getElementById('h-c-nasc').value) document.getElementById('h-c-nasc').value = c.nascimento || '';
+    if (c.consentimento && c.consentimento.aceito) document.getElementById('h-c-consent').checked = true;
+    const ult = c.ultimaVisita ? new Date(c.ultimaVisita).toLocaleDateString('pt-BR') : '-';
+    inf.textContent = '✔ Cliente conhecido · ' + (c.visitas || 1) + ' visita(s) · última em ' + ult;
+    inf.className = 'h-info on';
+    hIdadeAviso();
+  });
+}
+function hIdade(nasc) {
+  if (!nasc) return null;
+  const p = nasc.split('-'); if (p.length !== 3) return null;
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - parseInt(p[0], 10);
+  const m = hoje.getMonth() + 1 - parseInt(p[1], 10);
+  if (m < 0 || (m === 0 && hoje.getDate() < parseInt(p[2], 10))) idade--;
+  return idade;
+}
+function hIdadeAviso() {
+  const idade = hIdade(document.getElementById('h-c-nasc').value);
+  const er = document.getElementById('h-c-erro');
+  er.textContent = (idade !== null && idade < 18 && idade >= 0) ? '⚠ Cliente menor de 18 anos (' + idade + ')' : '';
+}
+function hSalvarCadastro(agrupar) {
+  const er = document.getElementById('h-c-erro');
+  const tel = hTel(document.getElementById('h-c-tel').value);
+  const nome = document.getElementById('h-c-nome').value.trim();
+  const sexo = document.getElementById('h-c-sexo').value;
+  const nasc = document.getElementById('h-c-nasc').value;
+  const consent = document.getElementById('h-c-consent').checked;
+  if (tel.length < 10) { er.textContent = 'Informe o telefone com DDD'; return; }
+  if (nome.length < 2) { er.textContent = 'Informe o nome'; return; }
+  if (!sexo) { er.textContent = 'Selecione o sexo'; return; }
+  const idade = hIdade(nasc);
+  if (idade === null || idade < 0 || idade > 110) { er.textContent = 'Informe uma data de nascimento válida'; return; }
+  if (!consent) { er.textContent = 'É preciso o consentimento do cliente para guardar os dados'; return; }
+  const k = hComandaPend;
+  if (!k) return;
+  const agora = Date.now();
+  const dia = hDiaKey();
+  const grupoId = 'g' + agora.toString(36) + Math.floor(Math.random() * 1000).toString(36);
+  const visRef = db.ref('hostess/visitas/' + dia).push();
+  const dados = { tel: tel, nome: nome, entradaTs: agora, grupoId: grupoId, visita: dia + '/' + visRef.key };
+  db.ref('hostess/comandas/' + k).transaction(function (cur) { return cur ? undefined : dados; }).then(function (res) {
+    if (!res.committed) { er.textContent = 'Comanda ' + k + ' acabou de ser usada por outro aparelho'; return; }
+    visRef.set({ comanda: k, tel: tel, nome: nome, entradaTs: agora, grupoId: grupoId });
+    db.ref('hostess/clientes/' + tel).transaction(function (cur) {
+      cur = cur || {};
+      cur.nome = nome; cur.tel = tel; cur.sexo = sexo; cur.nascimento = nasc;
+      cur.criadoEm = cur.criadoEm || agora;
+      cur.ultimaVisita = agora;
+      cur.visitas = (cur.visitas || 0) + 1;
+      if (!cur.consentimento) cur.consentimento = { aceito: true, ts: agora, versao: 'v1' };
+      return cur;
+    });
+    document.getElementById('h-modal-cadastro').classList.remove('open');
+    hComandaPend = null;
+    if (agrupar) {
+      hAgrupando = { tel: tel, nome: nome, grupoId: grupoId };
+      hAbrirScanner();
+    } else {
+      hSnack('Comanda ' + k + ' registrada — ' + nome, false);
+    }
+  });
+}
+function hAdicionarAoGrupo(k) {
+  const g = hAgrupando; if (!g) return;
+  const agora = Date.now();
+  const dia = hDiaKey();
+  const visRef = db.ref('hostess/visitas/' + dia).push();
+  const dados = { tel: g.tel, nome: g.nome, entradaTs: agora, grupoId: g.grupoId, visita: dia + '/' + visRef.key };
+  db.ref('hostess/comandas/' + k).transaction(function (cur) { return cur ? undefined : dados; }).then(function (res) {
+    const msg = document.getElementById('h-scan-msg');
+    if (!res.committed) { msg.textContent = 'Comanda ' + k + ' já está em uso'; return; }
+    visRef.set({ comanda: k, tel: g.tel, nome: g.nome, entradaTs: agora, grupoId: g.grupoId });
+    msg.textContent = '✔ Comanda ' + k + ' adicionada ao grupo';
+    if (navigator.vibrate) navigator.vibrate(80);
+    setTimeout(hAtualizarBannerGrupo, 400);
+  });
+}
+
+// ── Detalhe / saída ──
+function hAbrirDetalhe(k) {
+  const c = hAtivas[k]; if (!c) return;
+  const agora = Date.now();
+  const grupo = Object.keys(hAtivas).filter(function (x) { return hAtivas[x].grupoId === c.grupoId; }).sort();
+  document.getElementById('h-d-titulo').textContent = 'Comanda ' + k;
+  let corpo = '<div class="h-row"><span>Nome</span><span>' + hEsc(c.nome) + '</span></div>' +
+    '<div class="h-row"><span>Telefone</span><span>' + hFmtTel(c.tel) + '</span></div>' +
+    '<div class="h-row"><span>Entrada</span><span>' + hFmtHora(c.entradaTs) + ' (' + hFmtDur(agora - c.entradaTs) + ' dentro)</span></div>';
+  if (grupo.length > 1) corpo += '<div class="h-row"><span>Grupo</span><span>' + grupo.join(', ') + '</span></div>';
+  if (agora - c.entradaTs > H_ALERTA_MS) corpo += '<div class="h-erro">⏰ Mais de 6 horas dentro — confira se já saiu</div>';
+  document.getElementById('h-d-corpo').innerHTML = corpo;
+  let b = '<button class="h-btn h-primary" onclick="hSaidaUma(\'' + k + '\')">Dar saída desta comanda</button>';
+  if (grupo.length > 1) b += '<button class="h-btn h-danger" onclick="hSaidaGrupo(\'' + k + '\')">Dar saída do grupo (' + grupo.length + ' comandas)</button>';
+  b += '<button class="h-btn" onclick="hAgruparMais(\'' + k + '\')">➕ Agrupar mais comandas</button>';
+  b += '<button class="h-btn" onclick="document.getElementById(\'h-modal-detalhe\').classList.remove(\'open\')">Fechar</button>';
+  document.getElementById('h-d-btns').innerHTML = b;
+  document.getElementById('h-modal-detalhe').classList.add('open');
+}
+function hAgruparMais(k) {
+  const c = hAtivas[k]; if (!c) return;
+  document.getElementById('h-modal-detalhe').classList.remove('open');
+  hAgrupando = { tel: c.tel, nome: c.nome, grupoId: c.grupoId };
+  hAbrirScanner();
+}
+function hSaidaUma(k) { document.getElementById('h-modal-detalhe').classList.remove('open'); hSaida([k], 'manual'); }
+function hSaidaGrupo(k) {
+  const c = hAtivas[k]; if (!c) return;
+  const ks = Object.keys(hAtivas).filter(function (x) { return hAtivas[x].grupoId === c.grupoId; });
+  document.getElementById('h-modal-detalhe').classList.remove('open');
+  hSaida(ks, 'manual');
+}
+function hSaida(keys, tipo) {
+  const agora = Date.now();
+  const snap = [], up = {};
+  keys.forEach(function (k) {
+    const c = hAtivas[k]; if (!c) return;
+    snap.push({ k: k, c: c });
+    up['comandas/' + k] = null;
+    if (c.visita) { up['visitas/' + c.visita + '/saidaTs'] = agora; up['visitas/' + c.visita + '/saidaTipo'] = tipo; }
+  });
+  if (!snap.length) return;
+  db.ref('hostess').update(up);
+  hUndo = { snap: snap };
+  hSnack(snap.length === 1 ? 'Saída da comanda ' + snap[0].k : 'Saída de ' + snap.length + ' comandas', true);
+}
+function hDesfazer() {
+  if (!hUndo) return;
+  const up = {};
+  hUndo.snap.forEach(function (s) {
+    if (hAtivas[s.k]) return;
+    up['comandas/' + s.k] = s.c;
+    if (s.c.visita) { up['visitas/' + s.c.visita + '/saidaTs'] = null; up['visitas/' + s.c.visita + '/saidaTipo'] = null; }
+  });
+  if (Object.keys(up).length) db.ref('hostess').update(up);
+  hUndo = null;
+  clearTimeout(hUndoTimer);
+  hSnack('Saída desfeita', false);
+}
+
+// ── Encerrar noite ──
+function hAbrirEncerrar() {
+  const n = Object.keys(hAtivas).length;
+  document.getElementById('h-e-txt').textContent = n
+    ? 'Há ' + n + ' comanda(s) ainda em uso. Ao confirmar, todas ficam livres e a saída de cada uma é registrada agora, como encerramento da noite. Dá para desfazer logo em seguida.'
+    : 'Não há comandas em uso no momento.';
+  document.getElementById('h-modal-encerrar').classList.add('open');
+}
+function hConfirmarEncerrar() {
+  document.getElementById('h-modal-encerrar').classList.remove('open');
+  const ks = Object.keys(hAtivas);
+  if (!ks.length) return;
+  hSaida(ks, 'encerramento');
+}
 </script>
 </body>
 </html>
