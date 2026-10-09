@@ -577,6 +577,22 @@
   #h-snack.on{display:flex}
   #h-snack button{background:var(--dourado);color:#fff;border:none;padding:.35rem .8rem;border-radius:20px;font-size:.72rem;font-weight:600;cursor:pointer}
   @media (min-width:900px){.h-map{grid-template-columns:repeat(auto-fill,minmax(66px,1fr))}.h-top,.h-stats,.h-actions,.h-legenda,.h-map{max-width:1100px;margin-left:auto;margin-right:auto}}
+
+  /* ══ CAIXA / RESULTADO ══ */
+  #h-snack{z-index:500}
+  .h-tile .h-ok{position:absolute;top:1px;left:3px;font-size:.6rem;color:#9be37f;font-weight:700}
+  .h-res{display:none;position:fixed;inset:0;z-index:400;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem;cursor:pointer}
+  .h-res.on{display:flex}
+  .h-res.ok{background:#1f8a4c}
+  .h-res.no{background:#c0392b}
+  .h-res.info{background:#35597a}
+  .h-res .t{font-family:'Bevan',serif;font-size:2.8rem;line-height:1.1}
+  .h-res .s{font-size:1.7rem;margin-top:1rem;font-weight:700}
+  .h-res .x{margin-top:.7rem;font-size:1.05rem;opacity:.92}
+  #caixa-screen{display:none;position:fixed;inset:0;z-index:150;background:var(--verde-escuro);overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #caixa-screen.open{display:block}
+  .c-body{max-width:520px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:.8rem}
+  .c-sub{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cinza);margin-top:.6rem}
 </style>
 </head>
 <body>
@@ -855,6 +871,7 @@
     <span><i style="background:var(--dourado-claro)"></i>Em uso</span>
     <span><i style="background:#2E7D6B"></i>Cores iguais = mesmo grupo</span>
     <span><i style="box-shadow:0 0 0 2px var(--vermelho)"></i>+6h dentro</span>
+    <span style="color:#9be37f">✔ Liberada pelo caixa</span>
   </div>
   <div class="h-map" id="h-map"></div>
 
@@ -906,7 +923,44 @@
     </div>
   </div></div>
 
+
+  <div class="h-res" id="h-resultado" onclick="this.classList.remove('on')"></div>
+  <div class="h-ov" id="h-modal-senha"><div class="h-box">
+    <h3>Senha da gerência</h3>
+    <p style="font-size:.8rem;line-height:1.5;color:var(--areia)" id="h-senha-txt"></p>
+    <input id="h-senha-in" type="password" inputmode="numeric" maxlength="6" placeholder="••••••" style="margin-top:.6rem;text-align:center;letter-spacing:.4em" onkeydown="if(event.key==='Enter') hConfirmarSenha()">
+    <div class="h-erro" id="h-senha-erro"></div>
+    <div class="h-btns"><button class="h-btn h-primary" onclick="hConfirmarSenha()">Confirmar</button><button class="h-btn" onclick="document.getElementById('h-modal-senha').classList.remove('open')">Cancelar</button></div>
+  </div></div>
+
   <div id="h-snack"><span id="h-snack-txt"></span><button id="h-snack-btn" onclick="hDesfazer()">Desfazer</button></div>
+</div>
+
+
+<!-- ══ CAIXA ══ -->
+<div id="caixa-screen">
+  <div class="h-top">
+    <div style="width:64px"></div>
+    <div class="h-title">Caixa<small>Liberação de comandas</small></div>
+    <button class="h-btn" onclick="sairCaixa()">Sair</button>
+  </div>
+  <div class="c-body">
+    <div class="h-video-wrap"><video id="c-video" playsinline muted></video></div>
+    <div class="h-erro" id="c-msg" style="color:var(--areia)">Aponte a câmera para a comanda do cliente</div>
+    <div style="display:flex;gap:.5rem"><input id="c-num" type="tel" inputmode="numeric" maxlength="3" placeholder="Digitar nº da comanda" style="font-family:'Inter',sans-serif;font-size:16px;background:rgba(244,234,217,.07);border:1px solid rgba(139,33,49,.35);color:var(--areia);padding:.6rem .7rem;outline:none;border-radius:4px;width:100%" onkeydown="if(event.key==='Enter') cOkNum()"><button class="h-btn h-primary" onclick="cOkNum()">Liberar</button></div>
+    <div class="c-sub" id="c-sub">Últimas liberações</div>
+    <div id="c-lista"></div>
+  </div>
+  <div class="h-ov" id="c-modal-grupo"><div class="h-box">
+    <h3 id="c-g-tit">Comanda em grupo</h3>
+    <p style="font-size:.8rem;line-height:1.5;color:var(--areia)" id="c-g-txt"></p>
+    <div class="h-btns">
+      <button class="h-btn h-primary" onclick="cLiberarGrupo(false)">Só esta comanda</button>
+      <button class="h-btn" id="c-g-todo" onclick="cLiberarGrupo(true)">Liberar o grupo todo</button>
+      <button class="h-btn" onclick="document.getElementById('c-modal-grupo').classList.remove('open')">Cancelar</button>
+    </div>
+  </div></div>
+  <div class="h-res" id="c-resultado" onclick="this.classList.remove('on')"></div>
 </div>
 
 <!-- Toast -->
@@ -966,6 +1020,7 @@ function onSenhaInput() {
 
 function verificarSenha() {
   const v = document.getElementById('login-input').value;
+  if (v === SENHA_CAIXA) { abrirCaixa(); return; }
   if (v === SENHA) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
@@ -1649,7 +1704,7 @@ function fecharHostess() {
   ['h-modal-cadastro', 'h-modal-detalhe', 'h-modal-encerrar'].forEach(function (id) { document.getElementById(id).classList.remove('open'); });
 }
 function hIniciarListeners() {
-  db.ref('hostess/comandas').on('value', function (s) { hAtivas = s.val() || {}; hRender(); });
+  db.ref('hostess/comandas').on('value', function (s) { hAtivas = s.val() || {}; hRender(); if (typeof cRenderLista === 'function') cRenderLista(); });
   hAssinarVisitas();
 }
 function hAssinarVisitas() {
@@ -1688,7 +1743,7 @@ function hRender() {
     const hit = q && ((String(c.nome || '').toLowerCase().indexOf(q) >= 0) || (qd && String(c.tel || '').indexOf(qd) >= 0));
     let cls = 'h-tile uso' + (alerta ? ' alerta' : '') + (q ? (hit ? ' h-hit' : ' h-dim') : '');
     html += '<div class="' + cls + '"' + (cor ? ' style="background:' + cor + '"' : '') + ' onclick="hAbrirDetalhe(\'' + k + '\')">' +
-      (alerta ? '<span class="h-clock">⏰</span>' : '') + '<b>' + k + '</b><small>' + hEsc(hPrimeiroNome(c.nome)) + '</small></div>';
+      (alerta ? '<span class="h-clock">⏰</span>' : '') + (hLiberada(c) ? '<span class="h-ok">✔</span>' : '') + '<b>' + k + '</b><small>' + hEsc(hPrimeiroNome(c.nome)) + '</small></div>';
   }
   document.getElementById('h-map').innerHTML = html;
 }
@@ -1727,8 +1782,7 @@ function hEntradaComanda(n, doScanner) {
   const c = hAtivas[k];
   if (c) {
     if (hAgrupando) { msg.textContent = 'Comanda ' + k + ' já está em uso (' + hPrimeiroNome(c.nome) + ')'; if (navigator.vibrate) navigator.vibrate(200); return; }
-    hFecharScanner();
-    hAbrirDetalhe(k);
+    hVerificarSaida(k);
     return;
   }
   if (hAgrupando) { hAdicionarAoGrupo(k); return; }
@@ -1925,6 +1979,7 @@ function hAbrirDetalhe(k) {
   let corpo = '<div class="h-row"><span>Nome</span><span>' + hEsc(c.nome) + '</span></div>' +
     '<div class="h-row"><span>Telefone</span><span>' + hFmtTel(c.tel) + '</span></div>' +
     '<div class="h-row"><span>Entrada</span><span>' + hFmtHora(c.entradaTs) + ' (' + hFmtDur(agora - c.entradaTs) + ' dentro)</span></div>';
+  corpo += '<div class="h-row"><span>Caixa</span><span>' + (hLiberada(c) ? '✔ liberada às ' + hFmtHora(c.liberadaTs) : 'aguardando liberação') + '</span></div>';
   if (grupo.length > 1) corpo += '<div class="h-row"><span>Grupo</span><span>' + grupo.join(', ') + '</span></div>';
   if (agora - c.entradaTs > H_ALERTA_MS) corpo += '<div class="h-erro">⏰ Mais de 6 horas dentro — confira se já saiu</div>';
   document.getElementById('h-d-corpo').innerHTML = corpo;
@@ -1941,12 +1996,11 @@ function hAgruparMais(k) {
   hAgrupando = { tel: c.tel, nome: c.nome, grupoId: c.grupoId };
   hAbrirScanner();
 }
-function hSaidaUma(k) { document.getElementById('h-modal-detalhe').classList.remove('open'); hSaida([k], 'manual'); }
+function hSaidaUma(k) { hSaidaManual([k]); }
 function hSaidaGrupo(k) {
   const c = hAtivas[k]; if (!c) return;
   const ks = Object.keys(hAtivas).filter(function (x) { return hAtivas[x].grupoId === c.grupoId; });
-  document.getElementById('h-modal-detalhe').classList.remove('open');
-  hSaida(ks, 'manual');
+  hSaidaManual(ks);
 }
 function hSaida(keys, tipo) {
   const agora = Date.now();
@@ -1989,6 +2043,196 @@ function hConfirmarEncerrar() {
   const ks = Object.keys(hAtivas);
   if (!ks.length) return;
   hSaida(ks, 'encerramento');
+}
+
+// ══════════════════════
+//  CAIXA + LIBERAÇÃO
+// ══════════════════════
+const SENHA_CAIXA = '000813';
+const H_LIB_MS = 30 * 60 * 1000;
+let cScan = { stream: null, loop: false, det: null, canvas: null, last: '', lastTs: 0 };
+let cTimer = null, cGrupoPend = null, hSenhaCb = null;
+const hResTimers = {};
+
+function hLiberada(c) { return !!(c && c.liberadaTs && (Date.now() - c.liberadaTs) <= H_LIB_MS); }
+
+function hResultado(id, tipo, titulo, sub, extra, ms) {
+  const el = document.getElementById(id);
+  el.className = 'h-res on ' + tipo;
+  el.innerHTML = '<div class="t">' + titulo + '</div><div class="s">' + sub + '</div>' + (extra ? '<div class="x">' + extra + '</div>' : '');
+  if (navigator.vibrate) navigator.vibrate(tipo === 'no' ? [300, 100, 300] : 90);
+  clearTimeout(hResTimers[id]);
+  hResTimers[id] = setTimeout(function () { el.classList.remove('on'); }, ms || (tipo === 'no' ? 4500 : 2600));
+}
+
+// ── Hostess: verifica liberação ao escanear comanda em uso ──
+function hVerificarSaida(k) {
+  const c = hAtivas[k]; if (!c) return;
+  if (hLiberada(c)) {
+    hSaida([k], 'caixa');
+    hResultado('h-resultado', 'ok', '✔ LIBERADO', 'Comanda ' + k, hEsc(c.nome) + ' · saída registrada');
+  } else {
+    hResultado('h-resultado', 'no', '✖ NEGADO', 'Comanda ' + k, hEsc(c.nome) + '<br>' + (c.liberadaTs ? 'Liberação expirada — voltar ao caixa' : 'Cliente precisa voltar ao caixa'));
+  }
+}
+function hSaidaManual(keys) {
+  const todasLib = keys.every(function (k) { return hLiberada(hAtivas[k]); });
+  document.getElementById('h-modal-detalhe').classList.remove('open');
+  if (todasLib) { hSaida(keys, 'caixa'); return; }
+  hPedirSenha('Esta saída não foi liberada pelo caixa. Digite a senha da gerência para registrar mesmo assim.', function () { hSaida(keys, 'manual_sem_caixa'); });
+}
+function hPedirSenha(txt, cb) {
+  hSenhaCb = cb;
+  document.getElementById('h-senha-txt').textContent = txt;
+  document.getElementById('h-senha-in').value = '';
+  document.getElementById('h-senha-erro').textContent = '';
+  document.getElementById('h-modal-senha').classList.add('open');
+  setTimeout(function () { document.getElementById('h-senha-in').focus(); }, 100);
+}
+function hConfirmarSenha() {
+  const v = document.getElementById('h-senha-in').value;
+  if (v !== SENHA) { document.getElementById('h-senha-erro').textContent = 'Senha incorreta'; return; }
+  document.getElementById('h-modal-senha').classList.remove('open');
+  const cb = hSenhaCb; hSenhaCb = null;
+  if (cb) cb();
+}
+
+// ── Caixa ──
+function abrirCaixa() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('caixa-screen').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (!hOn) { hOn = true; hIniciarListeners(); }
+  cRenderLista();
+  clearInterval(cTimer);
+  cTimer = setInterval(cRenderLista, 30000);
+  cIniciarScanner();
+}
+function sairCaixa() {
+  cPararScanner();
+  clearInterval(cTimer);
+  document.getElementById('caixa-screen').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-input').value = '';
+  for (let i = 0; i < 6; i++) document.getElementById('d' + i).classList.remove('filled');
+}
+async function cIniciarScanner() {
+  const msg = document.getElementById('c-msg');
+  try {
+    cScan.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const v = document.getElementById('c-video');
+    v.srcObject = cScan.stream;
+    await v.play();
+    cScan.det = null;
+    if ('BarcodeDetector' in window) { try { cScan.det = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { cScan.det = null; } }
+    cScan.loop = true;
+    cLoopScan();
+  } catch (e) {
+    msg.textContent = 'Câmera indisponível — digite o número da comanda.';
+  }
+}
+function cPararScanner() {
+  cScan.loop = false;
+  if (cScan.stream) { cScan.stream.getTracks().forEach(function (t) { t.stop(); }); cScan.stream = null; }
+  const v = document.getElementById('c-video'); if (v) v.srcObject = null;
+}
+function cLoopScan() {
+  if (!cScan.loop) return;
+  const v = document.getElementById('c-video');
+  if (v && v.readyState >= 2 && v.videoWidth) {
+    const w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+    const c = cScan.canvas || (cScan.canvas = document.createElement('canvas'));
+    c.width = w; c.height = h;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(v, 0, 0, w, h);
+    if (cScan.det) {
+      cScan.det.detect(c).then(function (r) { if (r && r.length) cLeuQR(r[0].rawValue); }).catch(function () {});
+    } else if (window.jsQR) {
+      const im = x.getImageData(0, 0, w, h);
+      const r = jsQR(im.data, w, h, { inversionAttempts: 'dontInvert' });
+      if (r && r.data) cLeuQR(r.data);
+    }
+  }
+  setTimeout(cLoopScan, 200);
+}
+function cLeuQR(texto) {
+  const agora = Date.now();
+  if (texto === cScan.last && agora - cScan.lastTs < 2500) return;
+  cScan.last = texto; cScan.lastTs = agora;
+  const m = String(texto).trim().match(/^0*(\d{1,3})$/);
+  if (!m) { document.getElementById('c-msg').textContent = 'QR não reconhecido: ' + String(texto).slice(0, 30); return; }
+  cEntrada(parseInt(m[1], 10));
+}
+function cOkNum() {
+  const el = document.getElementById('c-num');
+  const n = parseInt(el.value, 10);
+  el.value = '';
+  cEntrada(n);
+}
+function cEntrada(n) {
+  if (!n || n < 1 || n > H_MAX) { hResultado('c-resultado', 'no', 'INVÁLIDA', 'Comanda fora de 001–300', ''); return; }
+  const k = hPad(n);
+  const c = hAtivas[k];
+  if (!c) { hResultado('c-resultado', 'no', 'SEM ENTRADA', 'Comanda ' + k + ' não está em uso', 'Confira o número da comanda'); return; }
+  if (hLiberada(c)) { hResultado('c-resultado', 'info', 'JÁ LIBERADA', 'Comanda ' + k, hEsc(c.nome) + ' · liberada às ' + hFmtHora(c.liberadaTs)); return; }
+  const grupo = Object.keys(hAtivas).filter(function (x) { return hAtivas[x].grupoId === c.grupoId && !hLiberada(hAtivas[x]); }).sort();
+  if (grupo.length > 1) {
+    cGrupoPend = { k: k, grupo: grupo };
+    document.getElementById('c-g-tit').textContent = 'Comanda ' + k + ' é de um grupo';
+    document.getElementById('c-g-txt').textContent = hPrimeiroNome(c.nome) + ' tem ' + grupo.length + ' comandas abertas (' + grupo.join(', ') + '). Liberar só esta ou o grupo todo?';
+    document.getElementById('c-g-todo').textContent = 'Liberar o grupo todo (' + grupo.length + ')';
+    document.getElementById('c-modal-grupo').classList.add('open');
+    return;
+  }
+  cLiberar([k]);
+}
+function cLiberarGrupo(todo) {
+  const p = cGrupoPend; cGrupoPend = null;
+  document.getElementById('c-modal-grupo').classList.remove('open');
+  if (!p) return;
+  cLiberar(todo ? p.grupo : [p.k]);
+}
+function cLiberar(keys) {
+  const agora = Date.now();
+  const nome = hAtivas[keys[0]] ? hAtivas[keys[0]].nome : '';
+  Promise.all(keys.map(function (k) {
+    return db.ref('hostess/comandas/' + k).transaction(function (cur) {
+      if (!cur) return;
+      cur.liberadaTs = agora; cur.liberadaPor = 'caixa';
+      return cur;
+    }).then(function (res) {
+      if (res.committed) { const c = res.snapshot.val(); if (c && c.visita) db.ref('hostess/visitas/' + c.visita + '/liberadaTs').set(agora); return k; }
+      return null;
+    });
+  })).then(function (r) {
+    const ok = r.filter(Boolean);
+    if (!ok.length) { hResultado('c-resultado', 'no', 'ERRO', 'Não foi possível liberar', 'Tente novamente'); return; }
+    hResultado('c-resultado', 'ok', '✔ LIBERADA', 'Comanda' + (ok.length > 1 ? 's ' : ' ') + ok.join(', '), hEsc(nome) + ' · já pode ir à recepção');
+  });
+}
+function cRevogar(k) {
+  db.ref('hostess/comandas/' + k).transaction(function (cur) {
+    if (!cur) return;
+    delete cur.liberadaTs; delete cur.liberadaPor;
+    return cur;
+  }).then(function (res) {
+    if (res.committed) {
+      const c = res.snapshot.val();
+      if (c && c.visita) db.ref('hostess/visitas/' + c.visita + '/liberadaTs').remove();
+    }
+  });
+}
+function cRenderLista() {
+  const el = document.getElementById('c-lista');
+  if (!el) return;
+  const lib = Object.keys(hAtivas).filter(function (k) { return hLiberada(hAtivas[k]); }).sort(function (a, b) { return hAtivas[b].liberadaTs - hAtivas[a].liberadaTs; });
+  document.getElementById('c-sub').textContent = 'Liberadas aguardando saída (' + lib.length + ')';
+  if (!lib.length) { el.innerHTML = '<div style="font-size:.75rem;color:var(--cinza);padding:.5rem 0">Nenhuma comanda liberada no momento.</div>'; return; }
+  el.innerHTML = lib.slice(0, 15).map(function (k) {
+    const c = hAtivas[k];
+    return '<div class="h-row"><span><b>' + k + '</b> · ' + hEsc(c.nome) + '</span><span>' + hFmtHora(c.liberadaTs) + ' <button class="h-btn" style="padding:.2rem .6rem;font-size:.65rem;margin-left:.4rem" onclick="cRevogar(\'' + k + '\')">Revogar</button></span></div>';
+  }).join('');
 }
 </script>
 </body>
