@@ -2234,6 +2234,44 @@ function cRenderLista() {
     return '<div class="h-row"><span><b>' + k + '</b> · ' + hEsc(c.nome) + '</span><span>' + hFmtHora(c.liberadaTs) + ' <button class="h-btn" style="padding:.2rem .6rem;font-size:.65rem;margin-left:.4rem" onclick="cRevogar(\'' + k + '\')">Revogar</button></span></div>';
   }).join('');
 }
+
+// ── Leitor físico (totem/pistola em modo teclado): captura o código lido e trata como QR ──
+(function () {
+  let buf = '', ult = 0, tmr = null;
+  function ativo() {
+    const hs = document.getElementById('hostess-screen'), cs = document.getElementById('caixa-screen');
+    const h = hs && hs.classList.contains('open'), c = cs && cs.classList.contains('open');
+    if (!h && !c) return null;
+    const ovs = document.querySelectorAll('.h-ov.open, #c-modal-grupo.open');
+    for (let i = 0; i < ovs.length; i++) { if (ovs[i].id !== 'h-modal-scan') return null; }
+    return h ? 'h' : 'c';
+  }
+  function processa() {
+    clearTimeout(tmr);
+    const txt = buf.trim(); buf = '';
+    if (!txt) return;
+    const modo = ativo(); if (!modo) return;
+    const m = txt.match(/(\d{1,3})\D*$/);
+    if (!m) { hSnack('Leitor enviou: ' + txt.slice(0, 30) + ' (não reconhecido)', false); return; }
+    const n = m[1];
+    if (modo === 'h') {
+      if (document.getElementById('h-modal-scan').classList.contains('open')) hLeuQR(n); else hEntradaComanda(parseInt(n, 10), false);
+    } else cLeuQR(n);
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!ativo()) { buf = ''; return; }
+    const ae = document.activeElement, tag = ae && ae.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') { buf = ''; return; }
+    const agora = Date.now();
+    if (e.key === 'Enter' || e.key === 'Tab') { if (buf) { e.preventDefault(); processa(); } return; }
+    if (e.key && e.key.length === 1) {
+      if (agora - ult > 300) buf = '';
+      ult = agora; buf += e.key;
+      e.preventDefault();
+      clearTimeout(tmr); tmr = setTimeout(processa, 350);
+    }
+  }, true);
+})();
 </script>
 </body>
 </html>
