@@ -895,7 +895,6 @@
     <input id="h-c-nome" type="text" autocomplete="off" placeholder="Nome do cliente">
     <label>Sexo</label>
     <select id="h-c-sexo"><option value="">Selecione</option><option value="F">Feminino</option><option value="M">Masculino</option><option value="O">Outro</option><option value="N">Prefiro não informar</option></select>
-    <label class="h-chk"><input type="checkbox" id="h-c-consent"> Autorizo o Texas Country Bar a guardar meus dados e entrar em contato comigo (WhatsApp) com novidades e promoções.</label>
     <div class="h-erro" id="h-c-erro"></div>
     <div class="h-btns">
       <button class="h-btn h-primary" onclick="hSalvarCadastro(false)">Registrar entrada</button>
@@ -1864,7 +1863,6 @@ function hAbrirCadastro(k) {
   document.getElementById('h-c-titulo').textContent = 'Entrada · comanda ' + k;
   ['h-c-tel', 'h-c-nome'].forEach(function (id) { document.getElementById(id).value = ''; });
   document.getElementById('h-c-sexo').value = '';
-  document.getElementById('h-c-consent').checked = false;
   document.getElementById('h-c-erro').textContent = '';
   const inf = document.getElementById('h-c-info'); inf.className = 'h-info'; inf.textContent = '';
   document.getElementById('h-modal-cadastro').classList.add('open');
@@ -1888,7 +1886,6 @@ function hTelInput() {
     hClienteConhecido = c;
     if (!document.getElementById('h-c-nome').value) document.getElementById('h-c-nome').value = c.nome || '';
     if (!document.getElementById('h-c-sexo').value) document.getElementById('h-c-sexo').value = c.sexo || '';
-    if (c.consentimento && c.consentimento.aceito) document.getElementById('h-c-consent').checked = true;
     const ult = c.ultimaVisita ? new Date(c.ultimaVisita).toLocaleDateString('pt-BR') : '-';
     inf.textContent = '✔ Cliente conhecido · ' + (c.visitas || 1) + ' visita(s) · última em ' + ult;
     inf.className = 'h-info on';
@@ -1910,11 +1907,9 @@ function hSalvarCadastro(agrupar) {
   const tel = hTel(document.getElementById('h-c-tel').value);
   const nome = document.getElementById('h-c-nome').value.trim();
   const sexo = document.getElementById('h-c-sexo').value;
-  const consent = document.getElementById('h-c-consent').checked;
   if (tel.length < 10) { er.textContent = 'Informe o telefone com DDD'; return; }
   if (nome.length < 2) { er.textContent = 'Informe o nome'; return; }
   if (!sexo) { er.textContent = 'Selecione o sexo'; return; }
-  if (!consent) { er.textContent = 'É preciso o consentimento do cliente para guardar os dados'; return; }
   const k = hComandaPend;
   if (!k) return;
   const agora = Date.now();
@@ -1931,7 +1926,6 @@ function hSalvarCadastro(agrupar) {
       cur.criadoEm = cur.criadoEm || agora;
       cur.ultimaVisita = agora;
       cur.visitas = (cur.visitas || 0) + 1;
-      if (!cur.consentimento) cur.consentimento = { aceito: true, ts: agora, versao: 'v1' };
       return cur;
     });
     document.getElementById('h-modal-cadastro').classList.remove('open');
