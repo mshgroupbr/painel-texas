@@ -2032,7 +2032,10 @@ function hConfirmarEncerrar() {
   document.getElementById('h-modal-encerrar').classList.remove('open');
   const ks = Object.keys(hAtivas);
   if (!ks.length) return;
-  hSaida(ks, 'encerramento');
+  hPedirSenha('Digite a senha da gerência para zerar todas as comandas (' + ks.length + ' em uso).', function () {
+    const ks2 = Object.keys(hAtivas);
+    if (ks2.length) hSaida(ks2, 'encerramento');
+  });
 }
 
 // ══════════════════════
