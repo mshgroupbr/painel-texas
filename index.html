@@ -895,8 +895,6 @@
     <input id="h-c-nome" type="text" autocomplete="off" placeholder="Nome do cliente">
     <label>Sexo</label>
     <select id="h-c-sexo"><option value="">Selecione</option><option value="F">Feminino</option><option value="M">Masculino</option><option value="O">Outro</option><option value="N">Prefiro não informar</option></select>
-    <label>Data de nascimento</label>
-    <input id="h-c-nasc" type="date" oninput="hIdadeAviso()">
     <label class="h-chk"><input type="checkbox" id="h-c-consent"> Autorizo o Texas Country Bar a guardar meus dados e entrar em contato comigo (WhatsApp) com novidades e promoções.</label>
     <div class="h-erro" id="h-c-erro"></div>
     <div class="h-btns">
@@ -1864,7 +1862,7 @@ function hAbrirCadastro(k) {
   hComandaPend = k;
   hClienteConhecido = null;
   document.getElementById('h-c-titulo').textContent = 'Entrada · comanda ' + k;
-  ['h-c-tel', 'h-c-nome', 'h-c-nasc'].forEach(function (id) { document.getElementById(id).value = ''; });
+  ['h-c-tel', 'h-c-nome'].forEach(function (id) { document.getElementById(id).value = ''; });
   document.getElementById('h-c-sexo').value = '';
   document.getElementById('h-c-consent').checked = false;
   document.getElementById('h-c-erro').textContent = '';
@@ -1890,7 +1888,6 @@ function hTelInput() {
     hClienteConhecido = c;
     if (!document.getElementById('h-c-nome').value) document.getElementById('h-c-nome').value = c.nome || '';
     if (!document.getElementById('h-c-sexo').value) document.getElementById('h-c-sexo').value = c.sexo || '';
-    if (!document.getElementById('h-c-nasc').value) document.getElementById('h-c-nasc').value = c.nascimento || '';
     if (c.consentimento && c.consentimento.aceito) document.getElementById('h-c-consent').checked = true;
     const ult = c.ultimaVisita ? new Date(c.ultimaVisita).toLocaleDateString('pt-BR') : '-';
     inf.textContent = '✔ Cliente conhecido · ' + (c.visitas || 1) + ' visita(s) · última em ' + ult;
@@ -1907,23 +1904,16 @@ function hIdade(nasc) {
   if (m < 0 || (m === 0 && hoje.getDate() < parseInt(p[2], 10))) idade--;
   return idade;
 }
-function hIdadeAviso() {
-  const idade = hIdade(document.getElementById('h-c-nasc').value);
-  const er = document.getElementById('h-c-erro');
-  er.textContent = (idade !== null && idade < 18 && idade >= 0) ? '⚠ Cliente menor de 18 anos (' + idade + ')' : '';
-}
+function hIdadeAviso() { /* data de nascimento removida do cadastro */ }
 function hSalvarCadastro(agrupar) {
   const er = document.getElementById('h-c-erro');
   const tel = hTel(document.getElementById('h-c-tel').value);
   const nome = document.getElementById('h-c-nome').value.trim();
   const sexo = document.getElementById('h-c-sexo').value;
-  const nasc = document.getElementById('h-c-nasc').value;
   const consent = document.getElementById('h-c-consent').checked;
   if (tel.length < 10) { er.textContent = 'Informe o telefone com DDD'; return; }
   if (nome.length < 2) { er.textContent = 'Informe o nome'; return; }
   if (!sexo) { er.textContent = 'Selecione o sexo'; return; }
-  const idade = hIdade(nasc);
-  if (idade === null || idade < 0 || idade > 110) { er.textContent = 'Informe uma data de nascimento válida'; return; }
   if (!consent) { er.textContent = 'É preciso o consentimento do cliente para guardar os dados'; return; }
   const k = hComandaPend;
   if (!k) return;
@@ -1937,7 +1927,7 @@ function hSalvarCadastro(agrupar) {
     visRef.set({ comanda: k, tel: tel, nome: nome, entradaTs: agora, grupoId: grupoId });
     db.ref('hostess/clientes/' + tel).transaction(function (cur) {
       cur = cur || {};
-      cur.nome = nome; cur.tel = tel; cur.sexo = sexo; cur.nascimento = nasc;
+      cur.nome = nome; cur.tel = tel; cur.sexo = sexo;
       cur.criadoEm = cur.criadoEm || agora;
       cur.ultimaVisita = agora;
       cur.visitas = (cur.visitas || 0) + 1;
